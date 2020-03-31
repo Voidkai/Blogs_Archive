@@ -2,7 +2,7 @@
 
 > 参考书籍：《深入理解Java虚拟机——JVM高级特性与最佳实践》
 
-![Java内存区域图](pic/Java内存区域与内存溢出异常学习笔记_绘图.jpg)
+![Java内存区域图](https://cdn.kaixuan.site/blogpic/Java%E5%86%85%E5%AD%98%E5%8C%BA%E5%9F%9F%E4%B8%8E%E5%86%85%E5%AD%98%E6%BA%A2%E5%87%BA%E5%BC%82%E5%B8%B8%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0_%E7%BB%98%E5%9B%BE.jpg)
 
 ## 运行时的数据区域
 
