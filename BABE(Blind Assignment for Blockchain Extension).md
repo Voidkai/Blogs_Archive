@@ -1,87 +1,102 @@
-# BABE(Blind Assignment for Blockchain Extension)
+# BABE(Blind Assignment for Blockchain Extension)协议解析
 
-## Overview of BABE
+## BABE协议概述
 
-- In Quroboros Praos
-  - each party is selected to produce a block in a slot with **the probability proportional to the party's stake**.
-  - Compared with Quroboros Praos, in BABE, if parties are online in the slots that they are supposed to produce a block. However, if they were offline, then they are punished by having less chance to be selected in the future slots. 
-  - In Ouroboros and Quroboros Praos, the best chain is the longest chain. In Quroboros Genesis, the best chain can be the longest chain or the chain which is forked long enough and denser than the other chains in some interval.
-- There are two versions of BABE
-  - The first version is the same as Ouroboros Praos
-  - The second version solved the problem related to offline parties.
+在Quroboros Praos协议中，每一个协议参与者都以与其所持有股权（stake）成比例的概率被选择为区块制造者。因此，如果一个参与者所持有的股权越多则他被选为区块制造者的概率则越高。
 
-## BABE
+与Quroboros Praos协议相比，在BABE中，如果各方在时间片（slot）中在线，他们应该产生一个块。然而，如果他们是离线的，那么他们将受到惩罚，在未来的时间片中被选中的机会较少。
 
-There are sequential non-overlapping epochs ($e_1,e_2,...$), and each epoch contains a number of sequential slots($s_1^i,s_2^i,...,s_t^i$) up to some bound $t$. We randomly assign each slot to a party, many parties or none at the beginning of the epoch, as well as the assignment is blind, so the protocol is named Blind Assignment for Blockchain Extension.
-s
-Each party $P_j$ has at least two types of secret/ public key pairs:
+在Ouroboros和Quroboros Praos中，最优链就是最长链。在Quroboros Genesis中，最优链可以是最长的链，也可以是在某个区间内分叉而得到的比其他链更长更密集的链。
 
-- Account Keys ($sk_j^a, pk_j^a$) which are used to sign transactions.
-- Session keys consists of two keys: Verifiable random function keys($sk_j^{vrf}, pk_j^{vrf}$) and the signing keys for blocks($sk_j^{sgn}, pk_j^{sgn}$).
+BABE协议具有两个版本，其中第一个版本与Ouroboros Praos协议相同，而第二个版本则解决了参与方离线的相关问题。
 
-VRF keys could long live, but the associated signing keys should be updated from time to time for forwarding security against attackers causing slashing.
+## BABE协议介绍
 
-For Each party $P_j$ :
+在BABE协议中，规定一个有序无重复的时段epochs ($e_1,e_2,...$), 并且每个时段都包含一些有序的时间片($s_1^i,s_2^i,...,s_t^i$) 直到边界值$t$. 协议在每个时段开始时将每个时间片分发给一个，多个或者零个参与者，并且这样的分配是只有在区块产生时才能被其他参与方知晓分配结果。因此协议被称为盲分配(Blind Assignment)。
 
-- keeps a local set of blockchains $C_j=\{C_1,C_2,...,C_l\}$. These chains have some common blocks (at least the genesis block) until some height.
-- has a local buffer that contains the transactions signed with the account keys to be added to blocks
+每一个参与者 $P_j$ 都有至少两类密钥对：
 
-## BABE with GRANDPA Validators $\approx$Ouroboros Praos
+- 账户密钥对($sk_j^a, pk_j^a$) ，用于交易签名
+- 会话密钥对包括用于VRF函的密钥对($sk_j^{vrf}, pk_j^{vrf}$)以及用于区块签名的密钥对($sk_j^{sgn}, pk_j^{sgn}$)。
 
-Define probability of being selected as:
+VRF密钥可以长期存在，但相关的签名密钥应不断更新，以保证转发安全，防止攻击者造成破坏。
+
+对于每一个参与者$P_j$ ：
+
+- 保留一组本地区块链 $C_j=\{C_1,C_2,...,C_l\}$。这些链有一些共同的区块（至少起源区块(genesis block)相同），直到某个长度。
+- 有一个本地缓冲区，其中包含了用账户密钥签署的交易，这些交易将被添加到区块上
+
+## GRANDPA Validators 参与下的BABE协议 $\approx$Ouroboros Praos协议
+
+将参与方被选为造块者的概率如下定义:
 $$
 P_i = \phi_c(\alpha_i) = 1-(1-c)^{\alpha_i}
 $$
-where $\alpha_i$ is the relative stake of the party $P_i$ and $c$ is a constant. Importantly, the function $\phi$ is that it has the '**independent aggregation'** property, which informally means the probability of being selected as a slot leader does not increase as a party splits his stakes across virtual parties.
+其中$\alpha_i$为参与方$P_i$ 所具有的股权（stake），$c$ 是一个常数，函数$\phi$ 具有**独立聚合**的特点，即被选为时间片主导者的概率不会因为参与者将他的股权分摊到各个虚拟参与者而增加。
 
-the threshold for each party $P_i$
+对于 $P_i$的阈值为
 $$
 \tau_i = 2^{l_{vrf}}\phi_c(\alpha_i) = 2^{l_{vrf}}\times(1-(1-c)^{\alpha_i})
 $$
-where $l_{vrf}$ is the length of the VRF's first output.
+其中$l_{vrf}$为VRF的第一次输出值的长度。
 
-### Three phases
+### BABE协议的三个阶段
 
-#### 1. Genesis Phase
+#### 1. 创世阶段
 
-- Manually produce the unique genesis block
-  - which contain a random number $r_1$ for use during the first epoch for slot leader assignments, and We might set $r_1 = 0$ or use public random number from the Tor network instead.
-- Initial stake of the stake holders($st_1, st_2, ...,st_n$) and their session public keys and account public keys.
+- 手动生成唯一的创世块
+  - 其中包含一个随机数$r_1$，用于在第一个时间段用于分配时间片主导者，并且我们可能会设置$r_1 = 0$或者使用洋葱路由网络中的公共随机数来代替。
+- 初始股权持有人($st_1, st_2, ...,st_n$)的初始股权以及他们的会话公钥和账户公钥。
 
-#### 2. Normal Phase
+#### 2. 一般阶段
 
-- Each slot leader should produce and publish a block. And other nodes attempt to update their chain by extension with new valid blocks they observe.
+- 每个时间片主导者都应该产生并发布一个区块。而其他节点则试图用他们观察到的新的有效块来扩展更新他们的链。
 
-- $P_j$ has a set of chains $\mathbb{C}_j$ in the current slot $sl_k$ in the epoch $e_m$. We have a best chain $C$ selected in $sl_{k-1}$ by our selection scheme, and the length of $C$ is $l-1$.
+- $P_j$在当前时间片$sl_k$中$中有一组链$$\mathbb{C}_j$。通过我们的选择方案，在$sl_{k-1}$中选择了一条最佳链$C$，$C$的长度为$l-1$。
 
-- if the first output ($d$) of the following VRF is less than the threshold $\tau_j$ then he is the slot leader. So the more stake the $P_j$ have, the more he has a chance to be selected as a slot leader.
+- 如果下面VRF的第一个输出（$d$）小于阈值$\tau_j$，那么他就是时间片主导者。所以，$P_j$的股权越多，他就越有机会被选为slot leader。
   $$
   VRF_{sk_j^{vrf}}(r_m||sl_k)\rightarrow (d,\pi)
   $$
 
-- Generate or Validate
+- 生成或验证
 
-  - When $P_j$ generates a block. The block should contain the slot number, the hash of the previous block, the VRF output, trhansactions and the signature$\sigma = Sign_{sk_j^{sgn}}(sk_j||H_{j-1}||d||\pi||tx)$
-  - When $P_j$ receivess a block $B=(sl,H,d^{'},\pi^{'},tx^{'},\sigma^{'})$ produced by a party $P_t$, it validates the block with $Validate(B)$.
-    - if $Verify_{pk_t^{sgn}}(\sigma^{'})\rightarrow valid$.
-    - if $sl\leq sl_k$.
-    - if the party is the slot leader: $Verify_{pk_t^{vrf}}(\pi^{'},r_m||sl)\rightarrow valid$ and $d^{'} < \tau_t$.
-    - if $P_t$ did not produce another block for another chain in slot $sl$ (no double signature).
-    - if there exists a chain $C^{'}$ with the header $H$
+  - 当$P_j$生成一个区块。该区块应该包含槽号、前一个区块的哈希值、VRF输出、交易和签名$\sigma = Sign_{sk_j^{sgn}}(sk_j||H_{j-1}|||d|||\pi||tx)$
+  - 当$P_j$收到一个由$P_t$制作的块$B=(sl,H,d^{'},\pi^{'},tx^{'},\sigma^{'})$时，它用$Validate(B)$验证该块。
+    - 是否$Verify_{pk_t^{sgn}}(\sigma^{'})\rightarrow valid$。
+    - 是否有$sl\leq sl_k$。
+    - 如果当事人是slot leader，是否满足$Verify_{pk_t^{vrf}}(\pi^{'},r_m||sl)\rightarrow valid$且$d^{'}<\tau_t$.
+    - $P_t$是否在槽$sl$中没有为另一条链产生另一个块（没有双签名）。
+    - 是否存在一个带有头部$H$的链$C^{'}$。
 
-#### 3. Epoch Update
+#### 3. 时间段(Epoch)更新
 
+如果参与者想要更新他在epoch $e_{m+1}$的股权，那么他的股权应该在 $e_m$的开始(epoch $e_{m-1}$的末尾)更新。因为我们不希望各参与者在看到$e_{m+1}$的随机性后调整自己的股权。
 
+新时间段的随机性的计算方法与Ouroboros Praos相同。将从时间段的第一个时间片开始到$e_m$的$2R/3^{th}$个时间片（$R$是时间段大小）所有的VRF输出以块的形式连接起来。假设连接后为$\rho$。那么下一个时间段的随机性则为：
+$$
+r_{m+1}=H(r_m||m+1||\rho)
+$$
+这也可以结合VDF输出，防止敌手的小偏向，以获得更好的安全界限。
 
+## 最佳链选择算法(Best Chain Selection)
 
+给定一个链集$\mathbb{C}_j$和参与者当前的本地链$\mathbb{C}_{loc}$，最佳链算法通过GRANDPA消除所有不包括最终确定的块B的链。我们用集合$C_j^{'}$来表示剩余的链。然后算法输出包含$\mathbb{C}_{loc}$中不超过k个块的最长链。它抛弃从$\mathbb{C}_{loc}$分叉超过k个时间片的链。
 
-## Best Chain Selection
+我们没有使用Ouroboros Genesis中的选链规则，因为这个规则对于参与方经过一段时间后才上线，并且没有任何与当前有效链相关的信息来说是有用的（对于y一直在线的参与方来说，Genesis规则和Praos是无法区分的，概率可以忽略不计）。因为GRANDPA的不可改变性（finality），新来的参与方有了一个参考点来建立他们的链，所以我们不需要创世规则。
 
+## 相对时间(Relative Time)
 
+各个参与者知道当前的时间片对于BABE的安全性和完整性非常重要。我们假设时间片的时间$T$大于网络传播时间。
 
+每一个参与者都有一个本地时钟，这个时钟不必与网络同步。当他接收到创世块时，它将到达时间保存为$t_0$，作为第一个时间片开始的参考点。我们知道第一个时间片的开始时间对每个人来说都不一样。我们假设这个时差与时间片时间$T$相比可以忽略不计。
 
+现在，我们考虑在创世块发布后加入BABE的各个参与者，因为这些参与者在加入时不知道当前的时间片。这些人必须等待至少$δ$个有效区块，以确定时间片开始和结束的大约时间。
 
-## Relative Time
+假设一个参与者$P_j$加入网络，然后决定最佳链$C$，其header产生在时间片$sl_u$中。$P_j$存储在$sl_u$之后块的到达时间。用$t_1,t_2,...,t_δ$表示存储的区块到达时间，对应的区块包括时间片号(slot number) $sl′_1,sl′_2,...,sl′_δ$。这些时间片序号不一定是连续的，因为有些时间片可能是空的，或者slot leader是离线的。$P_j$推断出当前时间片序号$sl=sl′_δ+1$，给定 $T_i=T(sl-sl′_i)$为一个包括$\{t^′_1+T_1,t^′_2+T_2,...,t^{′}_δ+T_δ\}$的时间区间。
 
+另一个关键的时间问题是 "When to release the block"。为了找到一个好的区块释放时间，使其在时段结束前到达每个人，每个参与方都遵循与新加入的参与方相同的策略。假设参与者$P_j$是$sl$中的slot leader，并且计算如上所述的$T_{sl}=\{t′_1+T_1,t′_2+T_2,...,t′_δ+T_δ\}$。那么函数$f_{time}:R^δ→R$给出给定$T_{sl}$作为输入的释放时间。
 
+$f_{time}$的可能候选值为平均值、最大值等等。
 
+然后参与者在时间$f_{time}-L_{avg}$释放区块，其中$L_{avg}$是估计的网络延迟。
