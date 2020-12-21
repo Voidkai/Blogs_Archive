@@ -1,5 +1,9 @@
 # BABE(Blind Assignment for Blockchain Extension)协议解析
 
+> BABE协议，全称为 Blind Assignment for Blockchain Extension。BABE协议主要用在区块链系统的共识部分中，用于决定区块链应该什么时候由哪一个参与者产生区块。
+
+
+
 ## BABE协议概述
 
 在Quroboros Praos协议中，每一个协议参与者都以与其所持有股权（stake）成比例的概率被选择为区块制造者。因此，如果一个参与者所持有的股权越多则他被选为区块制造者的概率则越高。
